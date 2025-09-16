@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+
+{% endblock %}
+
+{% block extra_script %}
+<script>
+// 更新设备字段显示
+function updateDeviceFields(deviceType) {
+    console.log("devType=" + deviceType);
+    // hide all
+    $('.wifi-display-div').hide();
+    
+    // 根据设备类型显示相应字段
+    if (deviceType === '1') {
+        $('#ssid-div').show();
+        $('#psk-div').show();
+    } else {
+        $('#ssid-div').hide();
+        $('#psk-div').hide();
+    }
+}
+
+
+$(document).ready(function() {
+
+    // hide all
+    $('.wifi-display-div').hide();
+
+    // 设备详细信息
+    $(".dev_info").on('click',function(){
+        var row = $(this).closest('tr');
+        window.location.href='{% url "device_info" %}' + '?mac=' + row.data('dev-mac');
+    })
+
+    
+    // 设备类型变化时的事件处理    
+    $('#haswifi').change(function() {
+        console.log("select changed");
+        var selectedType = $(this).val();
+        updateDeviceFields(selectedType);
+    });
+
+    $('.dev_mod').on('click', function(){
+        var row = $(this).closest('tr');
+        var mac = row.data('dev-mac');
+        // var cells = row.find('td');
+        // var mac = $(cells[1]).text().trim();
+
+        $('#addDeviceModal').modal('show');
+
+        $('#deviceMAC').val(row.data('dev-mac'));
+        // $('#deviceMAC').prop('disabled', true);
+        $('#deviceSN').val(row.data('dev-sn'));
+        $('#deviceSN').prop('disabled', true);
+        $('#userPass').val(row.data('dev-userpwd'));
+        $('#SSID').val(row.data('dev-ssid'));
+        $('#prepsk').val(row.data('dev-psk'));
+        $('#Province').val(row.data('dev-province'));
+        $('#Password').val(row.data('dev-password'));
+        console.log("haswifi=" + row.data('dev-haswifi'));
+        if(row.data('dev-haswifi') == 1){
+            $('#haswifi').val('1');
+            updateDeviceFields('1');
+        }else if(row.data('dev-haswifi') == 0){
+            $('#haswifi').val('0');
+            updateDeviceFields('0');
+        }
+        if(row.data('dev-shortconn') == "True"){
+            $('#ShortConn').val('1');
+        }else{
+            $('#ShortConn').val('0');
+        }
+        $('#heartbeat').val(row.data('dev-hb'));
+    });
+    
+    // 设备表单提交处理
+    $('#deviceForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // 显示加载状态
+        $('#submitButton').prop('disabled', true);
+        $('#submitButton .spinner-border').show();
+
+        // 收集表单数据
+        //var formData = new FormData(this);
+        formData = {
+            'mac' : $('#deviceMAC').val(),
+            'sn' : $('#deviceSN').val(),
+            'userpass' : $('#userPass').val(),
+            'password' : $('#Password').val(),
+            'haswifi' : $('#haswifi').val(),
+            'ssid' : $('#SSID').val(),
+            'psk' : $('#prepsk').val(),
+            'province' : $('#Province').val(),
+            'shortconn' : $('#ShortConn').val(),
+            'heartbeat' : $('#heartbeat').val(),
+        };
+        if(formData['haswifi'] == '0'){
+            formData['ssid'] = '';
+            formData['psk'] = '';
+        }
+        /**
+        fetch("{% url 'device_add_popup' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // 'X-CSRFToken': getCookie('csrftoken') // 需要获取CSRF令牌的函数
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status == 'success') {
+                // 成功处理
+                // 隐藏添加设备模态框
+                $('#addDeviceModal').modal('hide');
+                    
+                // 显示成功提示
+                $('#successModal').modal('show');
+                
+                // 重置表单
+                $('#deviceForm')[0].reset();
+                $('#deviceForm .is-invalid').removeClass('is-invalid');
+                // showSuccessMessage(data.message);
+            } else {
+                // 显示错误
+                // showErrorMessage(data.error);
+                alert('error: ' + error);
+            }
+        })
+        .catch(error => {
+            showErrorMessage('请求失败: ' + error);
+        });
+        **/
+        /**/
+        // 发送Ajax请求
+        $.ajax({
+            url: "{% url 'device_mod_popup' %}",
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            // beforeSend: function(xhr) {
+            //    xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            // },
+            success: function(response) {
+                // alert('status: ' + response.status);
+                if (response.status === 'success') {
+                    // 隐藏添加设备模态框
+                    $('#addDeviceModal').modal('hide');
+                    
+                    // 显示成功提示
+                    $('#successModal').modal('show');
+                    
+                    // 重置表单
+                    $('#deviceForm')[0].reset();
+                    $('#deviceForm .is-invalid').removeClass('is-invalid');
+                    
+                    // 添加新设备到列表
+                    // addDeviceToView(response.device);
+                } else {
+                    alert('error: ' + error);
+                    // 显示表单错误
+                    // displayFormErrors(response.errors);
+                }
+            },
+            error: function(xhr, status, error) {
+                errData = JSON.parse(xhr.responseText);
+                alert('请求失败: ' + errData.message);
+                // 恢复按钮状态
+                $('#submitButton').prop('disabled', false);
+                $('#submitButton .spinner-border').hide();
+            },
+            complete: function() {
+                // 恢复按钮状态
+                $('#submitButton').prop('disabled', false);
+                $('#submitButton .spinner-border').hide();
+            }
+        });
+        /**/
+    });
+    
+    // 当添加设备模态框隐藏时重置表单
+    $('#addDeviceModal').on('hidden.bs.modal', function () {
+        $('#deviceForm')[0].reset();
+        $('#deviceForm .is-invalid').removeClass('is-invalid');
+    });
+    
+    // 成功提示模态框关闭后刷新页面
+    $('#successModal').on('hidden.bs.modal', function () {
+        // 可以选择刷新页面或动态添加设备到列表
+        window.location.reload();
+    });
+});
+
+
+
+// 显示表单错误
+function displayFormErrors(errors) {    
+    // 清除所有错误提示
+    $('.invalid-feedback').text('');
+    $('.form-control').removeClass('is-invalid');
+    
+    // 显示新的错误提示
+    if (errors) {
+        for (var field in errors) {
+            if (errors.hasOwnProperty(field)) {
+                var errorMessage = errors[field].join(' ');
+                $('#' + field + 'Error').text(errorMessage);
+                $('[name="' + field + '"]').addClass('is-invalid');
+            }
+        }
+    }
+}
+
+// 添加设备到视图
+function addDeviceToView(device) {
+    // 创建设备卡片HTML
+    var deviceCard = `
+        <div class="col-md-4">
+            <div class="card device-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title">${device.name}</h5>
+                        <span class="badge bg-secondary device-type-badge">${device.type_display}</span>
+                    </div>
+                    <h6 class="card-subtitle mb-2 text-muted">型号: ${device.model || '未填写'}</h6>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            <i class="bi bi-upc-scan"></i> ${device.serial_number}<br>
+                            <i class="bi bi-calendar-event"></i> 购买日期: ${device.purchase_date || '未填写'}<br>
+                            <i class="bi bi-clock-history"></i> 添加时间: 刚刚
+                        </small>
+                    </p>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary">查看</button>
+                        <button class="btn btn-sm btn-outline-warning">编辑</button>
+                        <button class="btn btn-sm btn-outline-danger">删除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 如果设备列表为空，先移除空状态提示
+    if ($('#devices-container').children().length === 1 && $('#devices-container').children().hasClass('alert')) {
+        $('#devices-container').empty();
+    }
+    
+    // 添加新设备到列表顶部
+    $('#devices-container').prepend(deviceCard);
+}
+
+function add_device_func(id)
+{
+    var myModal = new bootstrap.Modal(document.getElementById('addDeviceModal'));
+    
+    myModal.show(id);
+}
+
+
+
+</script>
+{% endblock %}
+
+{% block title %}首页 - 我的网站{% endblock %}
+
+{% block content %}
+ 
+<div id="main" class="clear">
+    <!-- 左侧导航 -->
+    <div class="nav-left">
+        <a href="javascript:;"  class="nav-list active device" stbcode="bms/device">
+            <em></em>网关设备信息
+        </a>
+        <a href="javascript:;"  class="nav-list boot" stbcode="bms/add_dev">
+            <em></em>添加设备
+        </a>
+    </div>
+
+    <!--右侧内容区-->
+    <div class="content-right">
+        <h1 class="page-title">欢迎来到我们的网站</h1>
+        
+        <div class="sn-box clear">
+            <span class="snfont">搜索：</span>
+            <input class="sn-textarea" type="float:left" id ="seltime" type="text" placeholder="在此输入SN以精确查找" name="bootSn">
+            <button id="search" class="search"></button>
+              
+              
+               
+                  <!--
+                <select class="fac" name="sel" id="sel">
+                  <option value ="">常用SN</option>
+                  <option value ="5309">ZX_5309</option>
+                  <option value ="DFA3">HW_DFA3</option>
+                  <option value="20A3">HW_20A3</option>
+                  <option value="CF75">HW_CF75</option>
+                  <option value="C29E">HW_C29E</option>
+              </select>
+
+              <input class="sn-textarea" type="float:left" id ="bootTimeStart" type="text" placeholder="开始时间..." name="bootTimeStart" onfocus="WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm:ss', isShowClear:false,isShowToday:false, qsEnabled:false, readOnly:true})">
+              <input class="sn-textarea" type="float:left" id ="bootTimeEnd" type="text" placeholder="结束时间..." name="bootTimeEnd" onfocus="WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm:ss', isShowClear:false,isShowToday:false, qsEnabled:false, readOnly:true})">
+              <button id="search" class="search"></button>
+          -->
+          <!-- <span id="add_dev" onclick="add_device_func()" class="active">添加设备</span> -->
+        </div>
+      
+        <div class="tables-parent" id="botReport">
+            <!-- <h3 class="tabtit">家庭网关设备信息列表</h3> -->
+            <div class="tables-box">                
+                <table id="appliancetab">
+                    <thead>
+                        <tr>
+                            <th width="50">序号</th>
+                            <th>MAC</th>
+                            <th>GPON_SN</th>
+                            <th>User密码</th>
+                            <th>SSID</th>
+                            <th>WiFi密码</th>
+                            <th>Password</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    {% if records %}
+                    <tbody  id="tbody">
+                    <!--数据循环体-->
+                        {% for record in records %}
+                        <tr data-dev-id="{{ forloop.counter }}" 
+                            data-dev-mac="{{ record.mac }}"
+                            data-dev-sn="{{ record.gponsn }}"
+                            data-dev-userpwd="{{ record.userpass }}"
+                            data-dev-haswifi="{{ record.haswifi }}"
+                            data-dev-ssid="{{ record.ssid }}"
+                            data-dev-psk="{{ record.psk }}"
+                            data-dev-shortconn="{{ record.shortconn }}"
+                            data-dev-password="{{ record.password }}"
+                            data-dev-province="{{ record.province }}"
+                            data-dev-hb="{{ record.heartbeat }}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ record.mac }}</td>
+                            <td>{{ record.gponsn }}</td>
+                            <td>{{ record.userpass }}</td>
+                            <td>{{ record.ssid }}</td>
+                            <td>{{ record.psk }}</td>
+                            <td>{{ record.password }}</td>
+                            <td style="width:200px"><a class="dev_info" href="javascript:;">查看信息</a><a class="dev_mod" href="javascript:;" row-index="{{ forloop.counter }}">修改信息</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% endif %}
+                </table>                
+            </div>
+            <div class="clear paging tablePagingDiv" id="paging1">
+                <div class="pages clear">
+                    <span>每页显示条数：</span>
+                    <div class="select">    
+                        <em>10</em>
+                        <ul class="hide">
+                            <li class="on">10</li>
+                            <li>20</li>
+                            <li>30</li>
+                            <li>40</li>
+                            <li>50</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="pagebtn">
+                    <a href="javascript:;" onclick="toPage()" class="gobtn aTg"></a>
+                    <p>转到<input type="text" id ="page1" class="pagePage">页</p>
+                    <b>共<i>1</i>页&nbsp;&nbsp;<em>--</em> 条</b>
+                    <a href="javascript:;" onclick="next()" class="ar aTr"></a>
+                    <div class="page_span_box clear" style="font-weight: 100;color: #b9b9b9;line-height: 24px;">
+
+                    </div>
+                    <a href="javascript:;" class="al aTl"></a>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="addDeviceModal" tabindex="-1" aria-labelledby="addDeviceModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addDeviceModalLabel">修改设备信息</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 表单内容 -->
+                        <form id="deviceForm">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="deviceMAC" class="form-label">MAC <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="deviceMAC" name="MAC" disabled>
+                                <div class="invalid-feedback" id="macError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="deviceSN" class="form-label">SN <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="deviceSN" name="SN" required>
+                                <div class="invalid-feedback" id="snError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="userPass" class="form-label">普通用户密码</label>
+                                <input type="text" class="form-control" id="userPass" name="userPwd" required>
+                                <div class="invalid-feedback" id="userPassError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="Password" class="form-label">Password</label>
+                                <input type="text" class="form-control" id="Password" name="pwd" required>
+                                <div class="invalid-feedback" id="PasswordError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ShortConn" class="form-label">是否支持短连接</label>
+                                <select class="form-control" id="ShortConn" name="shortconn" required>
+                                    <option value="">请选择设备连接类型</option>
+                                    <option value="1">短连接</option>
+                                    <option value="0">长连接</option>
+                                </select>
+                                <div class="invalid-feedback" id="shortconnError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="haswifi" class="form-label">是否带WiFi</label>
+                                <select class="form-control" id="haswifi" name="wifi" required>
+                                    <option value="">请选择设备类型</option>
+                                    <option value="1">有频</option>
+                                    <option value="0">无频</option>
+                                </select>
+                                <div class="invalid-feedback" id="typeError"></div>
+                            </div>
+                            <div class="wifi-display-div" id="ssid-div">
+                                <label for="SSID" class="form-label">SSID后四位<span class="text-danger"></span></label>
+                                <input type="text" class="form-control" id="SSID" name="SSIDName">
+                                <div class="invalid-feedback" id="SSIDError"></div>
+                            </div>
+                            <div class="wifi-display-div" id="psk-div">
+                                <label for="prepsk" class="form-label">WiFi密码<span class="text-danger"></span></label>
+                                <input type="text" class="form-control" id="prepsk" name="psk">
+                                <div class="invalid-feedback" id="pskError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="Province" class="form-label">省份</label>
+                                <input type="text" class="form-control" id="Province" name="prov" value="OTR">
+                                <div class="invalid-feedback" id="ProvinceError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="heartbeat" class="form-label">心跳周期</label>
+                                <input type="text" class="form-control" id="heartbeat" name="hb" value="120">
+                                <div class="invalid-feedback" id="heartbeatError"></div>
+                            </div>
+        
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="submit" id="submitButton" class="btn btn-primary">确认</button>
+                            </div>
+                        </form>
+                    </div>            
+                </div>
+            </div>
+        </div>
+        
+        <!-- 成功提示模态框 -->
+        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center py-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">设备修改成功！</h5>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+
+{% endblock %}

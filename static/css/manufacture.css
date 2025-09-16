@@ -1,0 +1,10 @@
+@charset "UTF-8";
+.cpuInformation {
+    width: 100%;
+    height: 400px;
+    background: #ffffff;
+    border-radius: 5px;
+    overflow: hidden;
+    padding: 15px 5px;
+    box-sizing: border-box;
+}

@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+
+{% endblock %}
+
+{% block extra_script %}
+
+<script>
+
+function update_plugin_list(plugin_list)
+{
+    pluginTableBody = document.getElementById('pluginTbody');
+    pluginTableBody.innerHTML = '';
+    let html = '';
+    plugin_list.forEach(plugin => {
+        console.log("name=" + plugin.Plugin_Name);
+        html += `
+            <tr>
+                <td width="500">${plugin.Plugin_Name}</td>
+                <td width="200">${plugin.Version}</td>
+                <td width="150">${plugin.Run}</td>
+                <td width="250">
+                    <a class="plugin-action-run" href="javascript:;">启动</a>
+                    <a class="plugin-action-stop" href="javascript:;">停止</a>
+                    <a class="plugin-action-upgrade" href="javascript:;">升级</a>
+                    <a class="plugin-action-uninstall" href="javascript:;">卸载</a>
+                </td>
+            </tr>
+        `;
+    });
+    console.log("html=" + html);
+    pluginTableBody.innerHTML = html;
+
+}
+
+$(document).ready(function() {
+    // 刷新状态
+    $('#refresh_status').on('click', function(){
+        location.reload(true);
+    });
+
+    // 唤醒设备
+    $('#online_device').on('click', function(){
+        $('#processingModal').modal('show');
+        console.log("online device ");
+        formData = {
+            'mac': $('#basic-info').data('device-mac'),
+        };
+        
+        // 发送异步请求
+        fetch("{% url 'online_dev' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            $('#processingModal').modal('hide');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            console.log("response=" + response.ok);
+            return response.json();
+        })
+        .then(data => {
+            console.log("status=" + data.status + ",result=" + data.result);
+            if(data.result == 0){
+                alert("唤醒设备成功！");
+                location.reload(true);
+            }else if(data.result == -998){
+                alert("唤醒设备超时，请检查设备是否在线！");
+            }else{
+                alert("唤醒设备出错！result=" + data.result);
+            }
+        })
+        .catch(error => {
+            
+        });
+    });
+    
+
+    // 刷新插件列表    
+    $('#refresh_plugin_list').on('click',function(){
+        $('#processingModal').modal('show');
+        console.log("mac=" + $('#basic-info').data('device-mac'));
+        formData = {
+            'mac' : $('#basic-info').data('device-mac'),
+            'sn' : $('#basic-info').data('device-sn'),
+        };
+        $.ajax({
+            url: "{% url 'query_plugin_list' %}",
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            // beforeSend: function(xhr) {
+            //    xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            // },
+            success: function(response) {
+                // alert('status: ' + response.status);
+                //location.reload(true);
+                $('#processingModal').modal('hide');
+                console.log("status=" + response.status + ",result=" + response.result);
+                if(response.result == 0){
+                    alert("刷新插件列表成功！");
+                    update_plugin_list(response.pluginList[0].pluginList);
+                }else if(response.result == -998){
+                    alert("获取信息超时，请检查设备是否在线！");
+                }else{
+                    alert("获取信息出错！result=" + data.result);
+                }
+                
+            },
+            error: function(xhr, status, error) {
+                console.log("error!!");
+                $('#processingModal').modal('hide');
+            },
+            complete: function() {
+                $('#processingModal').modal('hide');
+            }
+        });
+        
+    });
+
+    // 安装插件   
+    $('#install_plugin').on('click', function(){
+        var mac = $('#basic-info').data('device-mac');
+        // var cells = row.find('td');
+        // var mac = $(cells[1]).text().trim();
+
+        $('#installPluginModal').modal('show');
+    });
+    
+    // 安装插件提交处理
+    $('#installPluginForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        $('#processingModal').modal('show');
+
+        // 显示加载状态
+        $('#submitButton').prop('disabled', true);
+        $('#submitButton .spinner-border').show();
+
+        // 收集表单数据
+        //var formData = new FormData(this);
+        formData = {
+            'mac': $('#basic-info').data('device-mac'),
+            'pluginName' : $('#pluginName').val(),
+            'pluginVersion' : $('#pluginVersion').val(),
+            'pluginSize' : $('#pluginSize').val(),
+            'url' : $('#downloadUrl').val(),
+        };
+        /**
+        fetch("{% url 'device_add_popup' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // 'X-CSRFToken': getCookie('csrftoken') // 需要获取CSRF令牌的函数
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status == 'success') {
+                // 成功处理
+                // 隐藏添加设备模态框
+                $('#addDeviceModal').modal('hide');
+                    
+                // 显示成功提示
+                $('#successModal').modal('show');
+                
+                // 重置表单
+                $('#deviceForm')[0].reset();
+                $('#deviceForm .is-invalid').removeClass('is-invalid');
+                // showSuccessMessage(data.message);
+            } else {
+                // 显示错误
+                // showErrorMessage(data.error);
+                alert('error: ' + error);
+            }
+        })
+        .catch(error => {
+            showErrorMessage('请求失败: ' + error);
+        });
+        **/
+        /**/
+        // 发送Ajax请求
+        $.ajax({
+            url: "{% url 'plugin_install' %}",
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            // beforeSend: function(xhr) {
+            //    xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            // },
+            success: function(response) {
+                $('#processingModal').modal('hide');
+                // alert('status: ' + response.status);
+                console.log("status=" + response.status + ",result=" + response.result + ",data:"+response.pluginList);
+                if(response.result == 0){
+                    alert("安装插件成功！");
+                    update_plugin_list(response.pluginList);
+                }else if(response.result == -998){
+                    alert("安装插件超时，请检查设备是否在线！");
+                }else{
+                    alert("安装插件出错！result=" + response.result);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#processingModal').modal('hide');
+                errData = JSON.parse(xhr.responseText);
+                alert('请求失败: ' + errData.message);
+                // 恢复按钮状态
+                $('#submitButton').prop('disabled', false);
+                $('#submitButton .spinner-border').hide();
+            },
+            complete: function() {
+                $('#processingModal').modal('hide');
+                // 恢复按钮状态
+                $('#submitButton').prop('disabled', false);
+                $('#submitButton .spinner-border').hide();
+            }
+        });
+    });
+
+    // 当安装插件模态框隐藏时重置表单
+    $('#installPluginModal').on('hidden.bs.modal', function () {
+        $('#installPluginForm')[0].reset();
+        $('#installPluginForm .is-invalid').removeClass('is-invalid');
+    });
+    
+    // 成功提示模态框关闭后刷新页面
+    $('#successModal').on('hidden.bs.modal', function () {
+        // 可以选择刷新页面或动态添加设备到列表
+        window.location.reload();
+    });
+
+    // 启动插件
+    $('.plugin-action-run').on('click', function(e){
+        e.preventDefault();
+        $('#processingModal').modal('show');
+        // console.log("href=" + $('.plugin-action-run').prop('href'));
+        // if($('.plugin-action-run').prop('href') === 'javascript:void(0);'){
+        //     return;
+        // }
+        
+        // $('.plugin-action-run').prop('href', 'javascript:void(0);');
+
+        var row = $(this).closest('tr');
+        var pluginName = row.data('plugin-name');
+        console.log("run plugin " + pluginName);
+        formData = {
+            'mac': $('#basic-info').data('device-mac'),
+            'pluginName' : pluginName,
+        };
+        
+        // 发送Ajax请求
+        $.ajax({
+            url: "{% url 'plugin_run' %}",
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            // beforeSend: function(xhr) {
+            //    xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            // },
+            success: function(response) {
+                $('#processingModal').modal('hide');
+                console.log("response success");
+                // alert('status: ' + response.status);
+                console.log("status=" + response.status + ",result=" + response.result);
+                if(response.result == 0){
+                    alert("启动插件成功！");
+                    update_plugin_list(response.pluginList);
+                }else if(response.result == -998){
+                    alert("启动插件超时，请检查设备是否在线！");
+                }else{
+                    alert("启动插件出错！result=" + response.result);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#processingModal').modal('hide');
+                errData = JSON.parse(xhr.responseText);
+                alert('请求失败: ' + errData.message);
+            },
+            complete: function() {
+                // 恢复按钮状态
+                $('#processingModal').modal('hide');
+            }
+        });
+    });
+
+    // 升级插件
+    $('.plugin-action-upgrade').on('click', function(e){
+        e.preventDefault();
+        
+        console.log("href=" + $('.plugin-action-upgrade').prop('href'));
+        if($('.plugin-action-upgrade').prop('href') === 'javascript:void(0);'){
+            return;
+        }
+        
+        $('.plugin-action-upgrade').prop('href', 'javascript:void(0);');
+
+        var row = $(this).closest('tr');
+        var pluginName = row.data('plugin-name');
+        console.log("upgrade plugin " + pluginName);
+        formData = {
+            'mac': $('#basic-info').data('device-mac'),
+            'pluginName' : pluginName,
+        };
+        
+        // 发送Ajax请求
+        $.ajax({
+            url: "{% url 'plugin_upgrade' %}",
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            // beforeSend: function(xhr) {
+            //    xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            // },
+            success: function(response) {
+                console.log("response success");
+                // alert('status: ' + response.status);
+                if (response.status === 'success') {
+                    // 隐藏添加设备模态框
+                    $('#installPluginModal').modal('hide');
+                    
+                    // 显示成功提示
+                    $('#successModal').modal('show');
+                    
+                    // 重置表单
+                    $('#installPluginForm')[0].reset();
+                    $('#installPluginForm .is-invalid').removeClass('is-invalid');
+
+                } else {
+                    alert('error: ' + error);
+                    // 显示表单错误
+                    // displayFormErrors(response.errors);
+                }
+            },
+            error: function(xhr, status, error) {
+                errData = JSON.parse(xhr.responseText);
+                alert('请求失败: ' + errData.message);
+            },
+            complete: function() {
+                // 恢复按钮状态
+            }
+        });
+    });
+
+    // 停止插件
+    $('.plugin-action-stop').on('click', function(e){
+        e.preventDefault();
+        $('#processingModal').modal('show');
+        // console.log("href=" + $('.plugin-action-stop').prop('href'));
+        // if($('.plugin-action-stop').prop('href') === 'javascript:void(0);'){
+        //     return;
+        // }
+        
+        // $('.plugin-action-stop').prop('href', 'javascript:void(0);');
+
+        var row = $(this).closest('tr');
+        var pluginName = row.data('plugin-name');
+        console.log("stop plugin " + pluginName);
+        formData = {
+            'mac': $('#basic-info').data('device-mac'),
+            'pluginName' : pluginName,
+        };
+        
+        // 发送异步请求
+        fetch("{% url 'plugin_stop' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            $('#processingModal').modal('hide');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("status=" + data.status + ",result=" + data.result);
+            if(data.result == 0){
+                alert("停止插件成功！");
+            }else if(data.result == -998){
+                alert("停止插件超时，请检查设备是否在线！");
+            }else{
+                alert("停止插件出错！result=" + data.result);
+            }
+        })
+        .catch(error => {
+            $('#processingModal').modal('hide');
+        });
+    });
+
+    // 卸载插件
+    $('.plugin-action-uninstall').on('click', function(e){
+        e.preventDefault();
+        $('#processingModal').modal('show');
+        // console.log("href=" + $('.plugin-action-uninstall').prop('href'));
+        // if($('.plugin-action-uninstall').prop('href') === 'javascript:void(0);'){
+        //     return;
+        // }
+        
+        // $('.plugin-action-uninstall').prop('href', 'javascript:void(0);');
+
+        var row = $(this).closest('tr');
+        var pluginName = row.data('plugin-name');
+        console.log("uninstall plugin " + pluginName);
+        formData = {
+            'mac': $('#basic-info').data('device-mac'),
+            'pluginName' : pluginName,
+        };
+        
+        // 发送异步请求
+        fetch("{% url 'plugin_uninstall' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            $('#processingModal').modal('hide');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("status=" + data.status + ",result=" + data.result);
+            if(data.result == 0){
+                alert("卸载插件成功！");
+            }else if(data.result == -998){
+                alert("卸载插件超时，请检查设备是否在线！");
+            }else{
+                alert("卸载插件出错！result=" + data.result);
+            }
+        })
+        .catch(error => {
+            $('#processingModal').modal('hide');
+        });
+    });
+
+    // 插件恢复出厂
+    $('.plugin-action-factory').on('click', function(e){
+        e.preventDefault();
+        $('#processingModal').modal('show');
+        // console.log("href=" + $('.plugin-action-factory').prop('href'));
+        // if($('.plugin-action-factory').prop('href') === 'javascript:void(0);'){
+        //     return;
+        // }
+        
+        // $('.plugin-action-factory').prop('href', 'javascript:void(0);');
+
+        var row = $(this).closest('tr');
+        var pluginName = row.data('plugin-name');
+        console.log("factory plugin " + pluginName);
+        formData = {
+            'mac': $('#basic-info').data('device-mac'),
+            'pluginName' : pluginName,
+        };
+        
+        // 发送异步请求
+        fetch("{% url 'plugin_factory' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            $('#processingModal').modal('hide');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("status=" + data.status + ",result=" + data.result);
+            if(data.result == 0){
+                alert("插件恢复成功！");
+            }else if(data.result == -998){
+                alert("插件恢复超时，请检查设备是否在线！");
+            }else {
+                alert("插件恢复出错！result=" + data.result);
+            }
+        })
+        .catch(error => {
+            
+        });
+    });
+
+});
+
+// 显示表单错误
+function displayFormErrors(errors) {    
+    // 清除所有错误提示
+    $('.invalid-feedback').text('');
+    $('.form-control').removeClass('is-invalid');
+    
+    // 显示新的错误提示
+    if (errors) {
+        for (var field in errors) {
+            if (errors.hasOwnProperty(field)) {
+                var errorMessage = errors[field].join(' ');
+                $('#' + field + 'Error').text(errorMessage);
+                $('[name="' + field + '"]').addClass('is-invalid');
+            }
+        }
+    }
+}
+
+</script>
+
+{% endblock %}
+
+{% block title %}首页 - 我的网站{% endblock %}
+
+{% block content %}
+<div id="main" class="clear">
+    <!-- 左侧导航 -->
+    <div class="nav-left">
+        <a href="javascript:;"  class="nav-list active device" stbcode="bms/device">
+            <em></em>网关设备信息
+        </a>
+        <a href="javascript:;"  class="nav-list add" stbcode="bms/add_dev">
+            <em></em>添加设备
+        </a>
+    </div>
+
+    <!--右侧内容区-->
+    <div class="content-right">
+        {% if devices %}
+        {% for device in devices %}
+        <div class="tables-box-info" id="basic-info"
+            data-device-mac="{{ device.mac }}"
+            data-device-sn="{{ device.gponsn }}">
+            <span>基本信息</span>
+            <table>
+                <tr><td width="200">MAC:</td><td id="deviceMAC">{{ device.mac }}</td></tr>
+                <tr><td width="200">SN:</td><td id="deviceSN">{{ device.gponsn }}</td></tr>
+                <tr><td width="200">TR069地址</td><td>{{ device.tr069 }}</td></tr>
+                <tr><td width="200">在线状态</td><td>{{ device.status }} &nbsp;&nbsp;<button id="refresh_status">刷新</button>&nbsp;&nbsp;<button id="online_device">唤醒</button></td></tr>
+            </table>            
+        </div>
+        <hr>
+        <div class="tables-box-info">
+            <span>插件信息</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button id="refresh_plugin_list">刷新插件列表</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button id="install_plugin">安装插件</button>            
+            <table>
+                <thead>
+                    <tr>
+                        <th>插件名称</th>
+                        <th>版本号</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                
+                <tbody  id="pluginTbody">
+                {% for plugin in device.pluginList %}
+                <tr data-plugin-name="{{ plugin.Plugin_Name }}" 
+                    data-plugin-version="{{ plugin.Version }}"
+                    data-plugin-status="{{ plugin.Run }}">
+                    <td width="500">{{ plugin.Plugin_Name }}</td>
+                    <td width="200">{{ plugin.Version }}</td>
+                    <td width="150">{{ plugin.Run }}</td>
+                    <td width="250">
+                        <a class="plugin-action-run" href="javascript:;">启动</a>
+                        <a class="plugin-action-stop" href="javascript:;">停止</a>
+                        <a class="plugin-action-factory" href="javascript:;">恢复</a>
+                        <!-- <a class="plugin-action-upgrade" href="javascript:;">升级</a> -->
+                        <a class="plugin-action-uninstall" href="javascript:;">卸载</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>                
+            </table>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="tables-box-info">
+            <span class="text-danger">获取信息失败！</span>
+        </div>  
+        {% endif %}
+        
+        <div class="modal fade" id="installPluginModal" tabindex="-1" aria-labelledby="installPluginModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="installPluginModalLabel">安装插件</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 表单内容 -->
+                        <form id="installPluginForm">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="pluginName" class="form-label">插件名称</label>
+                                <input type="text" class="form-control" id="pluginName" name="name" required>
+                                <div class="invalid-feedback" id="nameError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="pluginVersion" class="form-label">版本号</label>
+                                <input type="text" class="form-control" id="pluginVersion" name="version" required>
+                                <div class="invalid-feedback" id="versionError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="pluginSize" class="form-label">文件大小</label>
+                                <input type="text" class="form-control" id="pluginSize" name="size" required>
+                                <div class="invalid-feedback" id="sizeError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="downloadUrl" class="form-label">下载地址</label>
+                                <input type="text" class="form-control" id="downloadUrl" name="url" required>
+                                <div class="invalid-feedback" id="urlError"></div>
+                            </div>
+        
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="submit" id="submitButton" class="btn btn-primary">确认</button>
+                            </div>
+                        </form>
+                    </div>            
+                </div>
+            </div>
+        </div>
+        
+        <!-- 成功提示模态框 -->
+        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center py-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">设备添加成功！</h5>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 正在处理提示模态框 -->
+        <div class="modal fade" id="processingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center py-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">正在处理，请稍候...</h5>
+                    </div>
+                    <!-- <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">确定</button>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+
+{% endblock %}
+
+{% block extra_script %}
+
+<script>
+
+// 更新设备字段显示
+function updateDeviceFields(deviceType) {
+    console.log("devType=" + deviceType);
+    // hide all
+    $('.wifi-display-div').hide();
+    
+    // 根据设备类型显示相应字段
+    if (deviceType === '1') {
+        $('#ssid-div').show();
+        $('#psk-div').show();
+    } else {
+        $('#ssid-div').hide();
+        $('#psk-div').hide();
+    }
+}
+
+$(document).ready(function() {
+
+    // hide all
+    $('.wifi-display-div').hide();
+
+    // 设备类型变化时的事件处理    
+    $('#haswifi').change(function() {
+        console.log("select changed");
+        var selectedType = $(this).val();
+        updateDeviceFields(selectedType);
+    });
+
+    // 设备表单提交处理
+    $('#deviceForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // 显示加载状态
+        $('#submitButton').prop('disabled', true);
+        $('#submitButton .spinner-border').show();
+
+        // 收集表单数据
+        //var formData = new FormData(this);
+        formData = {
+            'mac' : $('#deviceMAC').val(),
+            'sn' : $('#deviceSN').val(),
+            'userpass' : $('#userPass').val(),
+            'password' : $('#Password').val(),
+            'haswifi' : $('#haswifi').val(),
+            'ssid' : $('#SSID').val(),
+            'psk' : $('#prepsk').val(),
+            'province' : $('#Province').val(),
+            'shortconn' : $('#ShortConn').val(),
+            'heartbeat' : $('#heartbeat').val(),
+        };
+        if(formData['haswifi'] == '0'){
+            formData['ssid'] = '';
+            formData['psk'] = '';
+        }
+        /**/
+        // 发送Ajax请求
+        $.ajax({
+            url: "{% url 'device_add_popup' %}",
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            // beforeSend: function(xhr) {
+            //    xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+            // },
+            success: function(response) {
+                // alert('status: ' + response.status);
+                if (response.status === 'success') {
+                    // 隐藏添加设备模态框
+                    $('#addDeviceModal').modal('hide');
+                    
+                    // 显示成功提示
+                    $('#successModal').modal('show');
+                    
+                    // 重置表单
+                    $('#deviceForm')[0].reset();
+                    $('#deviceForm .is-invalid').removeClass('is-invalid');
+                    
+                    // 添加新设备到列表
+                    // addDeviceToView(response.device);
+                } else {
+                    alert('error: ' + error);
+                    // 显示表单错误
+                    // displayFormErrors(response.errors);
+                }
+            },
+            error: function(xhr, status, error) {
+                errData = JSON.parse(xhr.responseText);
+                alert('请求失败: ' + errData.message);
+                // 恢复按钮状态
+                $('#submitButton').prop('disabled', false);
+                $('#submitButton .spinner-border').hide();
+            },
+            complete: function() {
+                // 恢复按钮状态
+                $('#submitButton').prop('disabled', false);
+                $('#submitButton .spinner-border').hide();
+            }
+        });
+        /**/
+    });
+
+    // 当添加设备模态框隐藏时重置表单
+    $('#addDeviceModal').on('hidden.bs.modal', function () {
+        $('#deviceForm')[0].reset();
+        $('#deviceForm .is-invalid').removeClass('is-invalid');
+    });
+
+    // 成功提示模态框关闭后刷新页面
+    $('#successModal').on('hidden.bs.modal', function () {
+        // 可以选择刷新页面或动态添加设备到列表
+        window.location.reload();
+    });
+});
+
+</script>
+
+{% endblock %}
+
+{% block title %}首页 - 我的网站{% endblock %}
+
+{% block content %}
+
+<div id="main" class="clear">
+    <!-- 左侧导航 -->
+    <div class="nav-left">
+        <a href="javascript:;"  class="nav-list device" stbcode="bms/device">
+            <em></em>网关设备信息
+        </a>
+        <a href="javascript:;"  class="nav-list active add" stbcode="bms/add_dev">
+            <em></em>添加设备
+        </a>
+    </div>
+
+    <!--右侧内容区-->
+    <div class="content-right">
+        <form id="deviceForm">
+            {% csrf_token %}
+            <div >
+                <label for="deviceMAC" class="form-label">MAC <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="deviceMAC" name="MAC" placeholder="AABBCCDDEEFF" required>
+                <div class="invalid-feedback" id="macError"></div>
+            </div>
+            <div >
+                <label for="deviceSN" class="form-label">SN <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="deviceSN" name="SN" placeholder="CCOMCCDDEEFF" required>
+                <div class="invalid-feedback" id="snError"></div>
+            </div>
+            <div >
+                <label for="userPass" class="form-label">普通用户密码</label>
+                <input type="text" class="form-control" id="userPass" name="userPwd" required>
+                <div class="invalid-feedback" id="userPassError"></div>
+            </div>
+            <div >
+                <label for="Password" class="form-label">Password</label>
+                <input type="text" class="form-control" id="Password" name="pwd" required>
+                <div class="invalid-feedback" id="PasswordError"></div>
+            </div>
+            <div class="mb-3">
+                <label for="ShortConn" class="form-label">是否支持短连接</label>
+                <select class="form-control" id="ShortConn" name="shortconn" required>
+                    <option value="">请选择设备连接类型</option>
+                    <option value="1">短连接</option>
+                    <option value="0">长连接</option>
+                </select>
+                <div class="invalid-feedback" id="shortconnError"></div>
+            </div>
+            <div >
+                <label for="haswifi" class="form-label">是否带WiFi</label>
+                <select class="form-control" id="haswifi" name="wifi" required>
+                    <option value="">请选择设备类型</option>
+                    <option value="1">有频</option>
+                    <option value="0">无频</option>
+                </select>
+                <div class="invalid-feedback" id="typeError"></div>
+            </div>
+            <div class="wifi-display-div" id="ssid-div">
+                <label for="SSID" class="form-label">SSID后四位<span class="text-danger"></span></label>
+                <input type="text" class="form-control" id="SSID" name="SSIDName">
+                <div class="invalid-feedback" id="SSIDError"></div>
+            </div>
+            <div class="wifi-display-div" id="psk-div">
+                <label for="prepsk" class="form-label">WiFi密码<span class="text-danger"></span></label>
+                <input type="text" class="form-control" id="prepsk" name="psk">
+                <div class="invalid-feedback" id="pskError"></div>
+            </div>
+            <div >
+                <label for="Province" class="form-label">省份</label>
+                <input type="text" class="form-control" id="Province" name="prov" value="OTR">
+                <div class="invalid-feedback" id="ProvinceError"></div>
+            </div>
+            <div >
+                <label for="heartbeat" class="form-label">心跳周期</label>
+                <input type="text" class="form-control" id="heartbeat" name="hb" value="120">
+                <div class="invalid-feedback" id="heartbeatError"></div>
+            </div>
+            <br>
+            <div >
+                <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button> -->
+                <button type="submit" id="submitButton" class="btn btn-primary">确认</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{% endblock %}
