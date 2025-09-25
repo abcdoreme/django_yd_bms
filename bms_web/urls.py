@@ -1,5 +1,12 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
+
+from rest_framework.routers import DefaultRouter
+from bms_web import views
+
+router = DefaultRouter()
+router.register(r'records', views.RecordViewSet)
+router.register(r'devices', views.DeviceViewSet)
 
 urlpatterns = [
     path('about/', views.about, name='about'),
@@ -19,4 +26,8 @@ urlpatterns = [
     path('plugin_stop', views.device_plugin_stop, name='plugin_stop'),
     path('plugin_upgrade', views.device_plugin_upgrade, name='plugin_upgrade'),
     path('plugin_factory', views.device_plugin_factory, name='plugin_factory'),
+    
+    
+    # API接口，给VUE使用
+    path('api/v1/', include(router.urls)),
 ]

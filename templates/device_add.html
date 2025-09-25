@@ -149,7 +149,7 @@ $(document).ready(function() {
             {% csrf_token %}
             <div >
                 <label for="deviceMAC" class="form-label">MAC <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="deviceMAC" name="MAC" placeholder="AABBCCDDEEFF" required>
+                <input type="text" class="form-control" id="deviceMAC" name="MAC" placeholder="MAC地址：AABBCCDDEEFF，中间不带:或者-" required>
                 <div class="invalid-feedback" id="macError"></div>
             </div>
             <div >

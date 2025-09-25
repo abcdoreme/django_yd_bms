@@ -5,8 +5,8 @@ from django.db import models
 class Record(models.Model):
     mac = models.CharField(max_length=18, verbose_name="MAC", unique=True)
     gponsn = models.CharField(max_length=12, verbose_name="SN", unique=True)
-    ssid = models.CharField(max_length=10, verbose_name="SSID")
-    psk = models.CharField(max_length=16, verbose_name="PSK")
+    ssid = models.CharField(max_length=10, verbose_name="SSID", blank=True, default="")
+    psk = models.CharField(max_length=16, verbose_name="PSK", blank=True, default="")
     userpass = models.CharField(max_length=16, verbose_name="UserPwd")    
     password = models.CharField(max_length=32, verbose_name="Password")
     # tr069 = models.CharField(max_length=128, verbose_name="TR069", blank=True, default="")
@@ -26,7 +26,7 @@ class Device(models.Model):
     gponsn = models.CharField(max_length=12, verbose_name="SN", unique=True)
     tr069 = models.CharField(max_length=128, verbose_name="TR069", blank=True, default="")
     status = models.IntegerField(verbose_name="Status", blank=True, default=0)
-    pluginList = models.JSONField(default=dict, verbose_name="Plugins", blank=True)
+    pluginList = models.JSONField(default=list, verbose_name="Plugins", blank=True)
     
     
     def __str__(self):

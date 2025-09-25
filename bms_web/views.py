@@ -10,7 +10,16 @@ from django.db import IntegrityError
 
 from .models import Record, Device
 
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
+from .serializers import RecordSerializer, DeviceSerializer
+
 from .pluginApi import *
+
+
 
 
 def index(request):
@@ -52,7 +61,7 @@ def add_device_node(request):
                          heartbeat=data_from_json.get('heartbeat'))
             obj.save()
             # 返回JSON响应
-            return JsonResponse({'status': 'success', 'message': '操作成功！'})
+            # return JsonResponse({'status': 'success', 'message': '操作成功！'})
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': '无效的JSON数据'}, status=400)
         except IntegrityError as mysqlErr:
@@ -61,6 +70,7 @@ def add_device_node(request):
                 return JsonResponse({'status': 'fail', 'message': '设备信息已存在'}, status=400)
         except Exception as err:
             print("exception:", str(err))
+            return JsonResponse({'status': 'error', 'message': '添加失败，请重试！'}, status=400)
         
         # 同时添加Device实例
         data_from_json = json.loads(request.body)
@@ -69,6 +79,8 @@ def add_device_node(request):
                         gponsn=data_from_json.get('sn'),
                         status = 0)
         obj.save()
+        
+        return JsonResponse({'status': 'success', 'message': '操作成功！'})
     else:
         return JsonResponse({'status': 'error', 'message': '只支持POST请求'}, status=405)
 
@@ -293,3 +305,136 @@ def device_plugin_factory(request):
     else:
         return JsonResponse({'status': 'error', 'result': result.get('result')}, safe=False)
 
+
+
+class RecordViewSet(viewsets.ModelViewSet):
+    queryset = Record.objects.all()
+    serializer_class = RecordSerializer
+    print(queryset)
+    
+    # 手动添加 PATCH 支持
+    # def partial_update(self, request, pk=None):
+    #     """
+    #     手动实现 partial_update 方法
+    #     """
+    #     print("partial_update!")
+    #     try:
+    #         instance = Record.objects.get(pk=pk)
+    #     except Record.DoesNotExist:
+    #         print("partial_update:not existed!")
+    #         return Response(
+    #             {'error': '对象不存在'}, 
+    #             status=status.HTTP_404_NOT_FOUND
+    #         )
+        
+    #     serializer = self.serializer_class(
+    #         instance, 
+    #         data=request.data, 
+    #         partial=True  # 关键：允许部分更新
+    #     )
+    #     print("partial_update,serializer:", serializer)
+    #     if serializer.is_valid():
+    #         print("valid!!!")
+    #         serializer.save()
+    #         return Response(serializer.data)
+        
+    #     print("invalid!!!")
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+class DeviceViewSet(viewsets.ModelViewSet):
+    queryset = Device.objects.all()
+    serializer_class = DeviceSerializer
+    # lookup_field = 'mac'  # 使用mac字段作为查找条件
+    print("clss,queryset:", queryset)
+    
+    # def get_object(self, request, *args, **kwargs):
+    #     # 获取URL中的参数
+    #     print("get object")
+    #     # MAC = self.kwargs.get('mac')
+    #     MAC = request.GET.get('mac')
+    #     if MAC:
+    #         print("get_object,MAC:", MAC)
+    #     # 根据条件获取对象
+    #     # device = Device.objects.get(mac=MAC)
+    #     # if device:
+    #     #     device_serial = DeviceSerializer(device)
+    #     #     return Response(device_serial.data)
+    #     # else:
+    #     #     return Response()
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     obj = get_object_or_404(queryset, mac=MAC)
+    #     return obj
+
+    # 自定义动作（会自动生成路由）
+    @action(detail=True, methods=['get'])
+    def plugin_query(self, request, pk=None):
+        device = self.get_object()
+        print("plugin query:", device.mac)
+        device_serial = DeviceSerializer(device)
+        
+        return Response(device_serial.data)
+    
+    @action(detail=True, methods=['post'])
+    def plugin_action(self, request, pk=None):
+        device = self.get_object()
+        action = request.data.get('action')
+        print("plugin action:", device.mac, action, request.data.get('Plugin_Name'))
+        
+        if action == 'run':
+            result = json.loads(runPlugin(device.mac, generate_timestamp_based_id(), request.data.get('Plugin_Name')))
+        elif action == 'stop':
+            result = json.loads(stopPlugin(device.mac, generate_timestamp_based_id(), request.data.get('Plugin_Name')))
+        elif action == 'reset':
+            result = json.loads(factoryPlugin(device.mac, generate_timestamp_based_id(), request.data.get('Plugin_Name')))
+        elif action == 'install':
+            result = json.loads(installPlugin(device.mac, generate_timestamp_based_id(), request.data.get('Plugin_Name'), 
+                           request.data.get('Version'), request.data.get('Plugin_Size'), request.data.get('url')))
+        elif action == 'uninstall':
+            result = json.loads(uninstallPlugin(device.mac, generate_timestamp_based_id(), request.data.get('Plugin_Name')))
+        
+        print("plugin action", action, "result:", result)
+        if result.get('result') == 0:
+            return JsonResponse({'status': 'success', 'result': 0}, safe=False)
+        elif result.get('result') == -998:
+            print("run plugin timeout")
+            return JsonResponse({'status': 'error', 'result': -998}, safe=False)
+        elif result.get('result') == -997:
+            print("connect refused")
+            return JsonResponse({'status': 'error', 'result': -997}, safe=False)
+        else:
+            return JsonResponse({'status': 'error', 'result': result.get('result')}, safe=False)
+
+    @action(detail=False, methods=['get'])
+    def by_mac(self, request, pk=None):
+        MAC = request.GET.get('mac')
+        print("MAC:", MAC)        
+        device = get_object_or_404(Device, mac=MAC)
+        serializer = self.get_serializer(device)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def online(self, request, pk=None):
+        # 通过curl唤醒设备
+        status = None
+        result = 0
+        MAC = request.data.get('mac')
+        tr069 = Device.objects.get(mac=MAC).tr069
+        print("tr069:{}".format(tr069))
+        try:
+            response = requests.get(tr069 + "?platform=pms", timeout=5)  # 设置超时时间为5秒
+            response.raise_for_status()  # 如果请求返回的不是2xx状态码，将抛出HTTPError异常
+            status = 'success'
+        except requests.Timeout:
+            status = 'error'
+            result = -998
+        except ConnectionRefusedError:
+            status = 'error'
+            result = -997
+        except Exception as err:
+            print(f'Other error occurred: {err}')  # 打印其他类型的错误信息
+            status = 'error'
+            result = -999
+        return JsonResponse({'status': status, 'result': result}, safe=False)

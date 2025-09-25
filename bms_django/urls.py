@@ -19,5 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('bms/', include('bms_web.urls')),  # 包含应用路由
+    path('bms/', include('bms_web.urls')),  # 包含应用路由    
 ]

@@ -69,7 +69,7 @@ $(document).ready(function() {
         .then(data => {
             console.log("status=" + data.status + ",result=" + data.result);
             if(data.result == 0){
-                alert("唤醒设备成功！");
+                alert("唤醒请求发送成功！");
                 location.reload(true);
             }else if(data.result == -998){
                 alert("唤醒设备超时，请检查设备是否在线！");
@@ -547,7 +547,14 @@ function displayFormErrors(errors) {
                 <tr><td width="200">MAC:</td><td id="deviceMAC">{{ device.mac }}</td></tr>
                 <tr><td width="200">SN:</td><td id="deviceSN">{{ device.gponsn }}</td></tr>
                 <tr><td width="200">TR069地址</td><td>{{ device.tr069 }}</td></tr>
-                <tr><td width="200">在线状态</td><td>{{ device.status }} &nbsp;&nbsp;<button id="refresh_status">刷新</button>&nbsp;&nbsp;<button id="online_device">唤醒</button></td></tr>
+                <tr><td width="200">在线状态</td><td>
+                    {% if device.status > 0 %}
+                        <span style="color: green;">在线</span>
+                    {% else %}
+                        <span style="color: gray;">离线</span>
+                    {% endif %}
+                    &nbsp;&nbsp;<button id="refresh_status">刷新</button>&nbsp;&nbsp;<button id="online_device">唤醒</button>
+                </td></tr>
             </table>            
         </div>
         <hr>
@@ -576,7 +583,7 @@ function displayFormErrors(errors) {
                     <td width="250">
                         <a class="plugin-action-run" href="javascript:;">启动</a>
                         <a class="plugin-action-stop" href="javascript:;">停止</a>
-                        <a class="plugin-action-factory" href="javascript:;">恢复</a>
+                        <a class="plugin-action-factory" href="javascript:;">复位</a>
                         <!-- <a class="plugin-action-upgrade" href="javascript:;">升级</a> -->
                         <a class="plugin-action-uninstall" href="javascript:;">卸载</a>
                     </td>

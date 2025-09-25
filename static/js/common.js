@@ -223,14 +223,14 @@ $(document).ready(function(){
 
     //左侧导航栏设置
     function navscrollTop() {
-    let navH=$(".nav-left").height();
-    //let navHlength=$(".nav-left a").length;
-    let index=$('.'+tag).index();
-    let itemTop=(index+1)*60;
-    let diffvalue=itemTop-navH+20;
-    //let scrollHeight=$('.nav-left').prop("scrollHeight");
-    //alert('itemTop:'+itemTop+'navH:'+navH+'diffvalue:'+diffvalue)
-    $(".nav-left").scrollTop(diffvalue)
+        // let navH=$(".nav-left").height();
+        // //let navHlength=$(".nav-left a").length;
+        // let index=$('.'+tag).index();
+        // let itemTop=(index+1)*60;
+        // let diffvalue=itemTop-navH+20;
+        // //let scrollHeight=$('.nav-left').prop("scrollHeight");
+        // //alert('itemTop:'+itemTop+'navH:'+navH+'diffvalue:'+diffvalue)
+        // $(".nav-left").scrollTop(diffvalue)
     }
     navscrollTop();
     

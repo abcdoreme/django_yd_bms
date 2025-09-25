@@ -42,6 +42,12 @@ def listPlugin(mac, user_id):
     except socket.timeout:
         print("timeout")
         return json.dumps({'result': -998})
+    except ConnectionRefusedError:
+        print("ConnectionRefusedError")
+        return json.dumps({'result': -997})
+    except:
+        print("other error")
+        return json.dumps({'result': -999})
     finally:
         client.close()
     
@@ -63,6 +69,12 @@ def runPlugin(mac, user_id, pluginName):
     except socket.timeout:
         print("timeout")
         return json.dumps({'result': -998})
+    except ConnectionRefusedError:
+        print("ConnectionRefusedError")
+        return json.dumps({'result': -997})
+    except:
+        print("other error")
+        return json.dumps({'result': -999})
     finally:
         client.close()
 
@@ -83,6 +95,12 @@ def stopPlugin(mac, user_id, pluginName):
     except socket.timeout:
         print("timeout")
         return json.dumps({'result': -998})
+    except ConnectionRefusedError:
+        print("ConnectionRefusedError")
+        return json.dumps({'result': -997})
+    except:
+        print("other error")
+        return json.dumps({'result': -999})
     finally:
         client.close()
 
@@ -111,6 +129,12 @@ def installPlugin(mac, user_id, pluginName, pluginVersion, pluginSize, url):
     except socket.timeout:
         print("timeout")
         return json.dumps({'result': -998})
+    except ConnectionRefusedError:
+        print("ConnectionRefusedError")
+        return json.dumps({'result': -997})
+    except:
+        print("other error")
+        return json.dumps({'result': -999})
     finally:
         client.close()
 
@@ -131,6 +155,12 @@ def uninstallPlugin(mac, user_id, pluginName):
     except socket.timeout:
         print("timeout")
         return json.dumps({'result': -998})
+    except ConnectionRefusedError:
+        print("ConnectionRefusedError")
+        return json.dumps({'result': -997})
+    except:
+        print("other error")
+        return json.dumps({'result': -999})
     finally:
         client.close()
 
@@ -179,6 +209,12 @@ def factoryPlugin(mac, user_id, pluginName):
     except socket.timeout:
         print("timeout")
         return json.dumps({'result': -998})
+    except ConnectionRefusedError:
+        print("ConnectionRefusedError")
+        return json.dumps({'result': -997})
+    except:
+        print("other error")
+        return json.dumps({'result': -999})
     finally:
         client.close()
 

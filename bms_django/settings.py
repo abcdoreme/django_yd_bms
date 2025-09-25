@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-rauq(qik-@__n9+qm(0-@4th6i#y&9q(7hrcs2rz_&m85)76br
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -37,10 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
     'bms_web',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -141,3 +144,29 @@ ALLOWED_HOSTS = ['*']
 
 
 SOCKET_TIMEOUT = 10
+
+# CORS_ORIGIN_ALLOW_ALL = True
+
+# 指定允许的域名（生产环境推荐）
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8081",
+    "http://localhost:9527"
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ]
+}
+
+# 生产环境
+# 静态文件配置
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# 媒体文件配置
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
