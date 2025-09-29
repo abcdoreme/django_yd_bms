@@ -5,7 +5,7 @@ from rest_framework.routers import DefaultRouter
 from bms_web import views
 
 router = DefaultRouter()
-router.register(r'records', views.RecordViewSet)
+router.register(r'records', views.RecordViewSet, basename='record')
 router.register(r'devices', views.DeviceViewSet)
 
 urlpatterns = [

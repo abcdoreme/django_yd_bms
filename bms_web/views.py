@@ -9,11 +9,13 @@ from requests.exceptions import RequestException, HTTPError, Timeout, TooManyRed
 from django.db import IntegrityError
 
 from .models import Record, Device
+from django.db.models import Q
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from rest_framework.pagination import PageNumberPagination
 
 from .serializers import RecordSerializer, DeviceSerializer
 
@@ -305,12 +307,72 @@ def device_plugin_factory(request):
     else:
         return JsonResponse({'status': 'error', 'result': result.get('result')}, safe=False)
 
+class CustomPagination(PageNumberPagination):
+    """自定义分页类"""
+    page_size = 10
+    page_size_query_param = 'page_size'  # 允许前端指定每页大小
+    max_page_size = 100  # 限制最大每页数量
 
 
 class RecordViewSet(viewsets.ModelViewSet):
-    queryset = Record.objects.all()
+    # queryset = Record.objects.all()
+    # print(queryset)
     serializer_class = RecordSerializer
-    print(queryset)
+    pagination_class = CustomPagination
+    
+    search_fields = ['mac', 'gponsn']
+    
+    ordering_fields = ['id', 'mac', 'gponsn']
+    
+    def get_queryset(self):
+        """动态获取查询集，支持搜索"""
+        queryset = Record.objects.all()
+        
+        # 获取搜索关键词
+        keyword = self.request.query_params.get('keyword', None)
+        print("keyword:", keyword)
+        if keyword:
+            queryset = queryset.filter(
+                Q(mac__icontains=keyword) | 
+                Q(gponsn__icontains=keyword)
+            )
+        
+        return queryset
+    
+    # 重写list方法
+    # def list(self, request, *args, **kwargs):
+    #     """重写 list 方法，返回自定义格式的分页数据"""
+    #     queryset = self.filter_queryset(self.get_queryset())
+        
+    #     # 获取分页参数
+    #     page = request.query_params.get('page', 1)
+    #     page_size = request.query_params.get('page_size', 10)
+        
+    #     try:
+    #         page = int(page)
+    #         page_size = int(page_size)
+    #         page_size = min(page_size, 100)  # 限制最大每页100条
+    #     except ValueError:
+    #         page = 1
+    #         page_size = 10
+        
+    #     # 手动分页
+    #     paginator = Paginator(queryset, page_size)
+    #     page_obj = paginator.get_page(page)
+        
+    #     serializer = self.get_serializer(page_obj, many=True)
+        
+    #     return Response({
+    #         'code': 200,
+    #         'data': {
+    #             'list': serializer.data,
+    #             'total': paginator.count,
+    #             'page': page,
+    #             'page_size': page_size,
+    #             'total_pages': paginator.num_pages
+    #         },
+    #         'message': 'success'
+    #     })
     
     # 手动添加 PATCH 支持
     # def partial_update(self, request, pk=None):

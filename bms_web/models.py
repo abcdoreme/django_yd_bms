@@ -18,8 +18,10 @@ class Record(models.Model):
     def __str__(self):
         return self.mac
     
-    # class Meta:
-    #     db_table = 'record'
+    class Meta:
+        indexes = [
+            models.Index(fields=['mac', 'gponsn']),
+        ]
 
 class Device(models.Model):
     mac = models.CharField(max_length=18, verbose_name="MAC", unique=True)
