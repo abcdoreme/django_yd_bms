@@ -456,6 +456,8 @@ class DeviceViewSet(viewsets.ModelViewSet):
                            request.data.get('Version'), request.data.get('Plugin_Size'), request.data.get('url')))
         elif action == 'uninstall':
             result = json.loads(uninstallPlugin(device.mac, generate_timestamp_based_id(), request.data.get('Plugin_Name')))
+        elif action == 'list':
+            result = json.loads(listPlugin(device.mac, generate_timestamp_based_id()))
         
         print("plugin action", action, "result:", result)
         if result.get('result') == 0:
